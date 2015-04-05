@@ -13,7 +13,7 @@ SAMPLE = sys.argv[1]
 LOGF = open("graborg-log.csv", "a+")
 FNAME = SAMPLE.split('/')
 NAME = FNAME[-1]
-os.system('curl -o /security/samples/sort/%s -A "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36" %s -x "http://127.0.0.1:8118"' %(NAME, SAMPLE))
+os.system('curl -o /security/samples/sort/%s -A "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36" %s ' %(NAME, SAMPLE))
 MD5 = hashlib.md5(open('/security/samples/sort/%s' %NAME).read()).hexdigest()
 NOW = (time.strftime("%d/%m/%Y %H:%M:%S"))
 ENTRY = "%s,%s,%s,%s" % (MD5, NAME, NOW, SAMPLE)
