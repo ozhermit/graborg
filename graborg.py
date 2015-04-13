@@ -7,26 +7,64 @@ time allowing for files with the same name etc.
 import os
 import sys
 import hashlib
-import time
+from datetime import datetime
+import shutil
+import urllib2
 
-SAMPLE = sys.argv[1]
 
-#Check the csv to log results to has been moved from the template
-if not os.path.exists('graborg-log.csv'):
-    os.system('cp graborg-log.csv-template graborg-log.csv')
 
-#Directory downloaded files are saved to
-FILEDIR = "samples/"
-if not os.path.exists('%s' % FILEDIR):
-    os.system('mkdir %s' % FILEDIR)
+def grab(url, filename):
+    '''
+    download sample
+    '''
+    opener = urllib2.build_opener()
+    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) \
+    AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.137 Safari/537.36')]
+    file = opener.open('%s' % url)
+    filed = file.read()
+    f = open("samples/%s" %filename, 'wb')
+    f.write(filed)
+    f.close()
 
-LOGF = open("graborg-log.csv", "a+")
-FNAME = SAMPLE.split('/')
-NAME = FNAME[-1]
-os.system('curl -o %s%s -A "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36" %s ' %(FILEDIR, NAME, SAMPLE))
-MD5 = hashlib.md5(open('%s%s' %(FILEDIR, NAME)).read()).hexdigest()
-NOW = (time.strftime("%d/%m/%Y %H:%M:%S"))
-ENTRY = "%s,%s,%s,%s" % (MD5, NAME, NOW, SAMPLE)
-LOGF.write(ENTRY + '\n')
-os.system('mv %s%s %s%s' % (FILEDIR, NAME, FILEDIR, MD5))
-print "MD5 = %s  ||  FILNAME = %s  ||  Time Retrieved = %s  || Source = %s" % (MD5, NAME, NOW, SAMPLE)
+def org(NAME, sample):
+    '''
+    Md5 downloaded file, write details to log file and rename ot md5 hash.
+    '''
+    md5 = hashlib.md5(open('samples/%s' %NAME).read()).hexdigest()
+    logf = open("graborg-log.csv", "a+")
+    fsize = os.stat('samples/%s' % NAME).st_size
+    entry = "%s,%s,%s,%s,%s" % (md5, NAME, fsize, \
+    datetime.now().strftime("%d/%m/%Y %H:%M:%S"), sample)
+    logf.write(entry + '\n')
+    logf.close()
+    shutil.move('samples/%s' % NAME, 'samples/%s' % md5)
+
+def reqcheck():
+    '''
+    Check the logging file and samples directory exists
+    '''
+    filedir = "samples/"
+    filelog = "graborg-log.csv"
+
+    if not os.path.exists('%s' % filedir):
+        os.mkdir('%s' % filedir)
+    if not os.path.isfile('%s' % filelog):
+        shutil.copyfile('graborg-log.csv-template', 'graborg-log.csv')
+
+def main():
+    '''
+    main graborg process
+    '''
+
+    if len(sys.argv) == 1:
+        print "Please add destination file. Eg. \
+         python graborg.py http://example.com/badfile"
+    sample = sys.argv[1]
+    NAME = sample.split('/')[-1]
+    reqcheck()
+    grab(sample, NAME)
+    org(NAME, sample)
+
+if __name__ == "__main__":
+    main()
+
