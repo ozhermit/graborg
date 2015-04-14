@@ -10,7 +10,9 @@ Eg. ./graborg.py -u http://www.ozhermit.com/wp-content/uploads/2014/11/kippo.jpg
 Currently the output is to a .csv file.
 
 user@host:/security/tools/graborg$ more graborg-log.csv
+
 MD5,Filename,File Size,Time Acquired,Source
+
 e07c771cbf9216d7dc93cff31c9d6d94,kippo.jpg,76192,14/04/2015 10:36:16,http://www.ozhermit.com/wp-content/uploads/2014/11/kippo.jpg
 
 #Todo
