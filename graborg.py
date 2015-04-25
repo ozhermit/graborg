@@ -16,54 +16,67 @@ def parse_args():
     '''
     parse the in-line arguments.
     '''
-    parser = argparse.ArgumentParser(description="garborg: file analysis tool")
-    parser.add_argument("-u", "--url", required=True, type=str)
+    parser = argparse.ArgumentParser(description="graborg: file analysis tool")
+    parser.add_argument("-u", "--url", required=True, type=str, \
+    help="Set URL address to retrieve file from")
+    parser.add_argument("-p", "--proxy", nargs='?', const="127.0.0.1:8118",
+    type=str, help="Used to set proxy set by default address. Eg. \
+    192.168.0.254:8080. Localhost Privoxy set by default")
     args = parser.parse_args()
 
     return args
 
 
-def grab(url, filename):
+def grab(url, filename, proxy):
     '''
     download sample
     '''
+
+    # Check samples directory exists. If not make it.
+    filedir = "samples/"
+    if not os.path.exists('%s' % filedir):
+        os.mkdir('%s' % filedir)
+
+
     opener = urllib2.build_opener()
+    if proxy == True:
+        proxyh = urllib2.ProxyHandler({'http': '127.0.0.1:8118'})
+        opener = urllib2.build_opener(proxyh)
+
     opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) \
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.137 Safari/537.36')]
-    file = opener.open('%s' % url)
-    filed = file.read()
-    f = open("samples/%s" % filename, 'wb')
-    f.write(filed)
-    f.close()
+    urllib2.install_opener(opener)
+    filed = opener.open('%s' % url).read()
+    fout = open("samples/%s" % filename, 'wb')
+    fout.write(filed)
+    fout.close()
 
 
 def org(NAME, sample):
     '''
     Md5 downloaded file, write details to log file and rename ot md5 hash.
     '''
+
+    filedir = "samples/"
+    logfile_name = "graborg-log.csv"
+
+    if not os.path.isfile('%s' % logfile_name):
+        shutil.copyfile('%s-template' % logfile_name, logfile_name)
+
+    # Generate File MD5
     md5 = hashlib.md5(open('samples/%s' % NAME).read()).hexdigest()
+
+    #Add file details to CSV file
     logf = open("graborg-log.csv", "a+")
-    fsize = os.stat('samples/%s' % NAME).st_size
+    fsize = os.stat(os.path.join(filedir, NAME)).st_size
     entry = '{0},{1},{2},{3},{4}'.format(
-        md5, NAME, fsize, datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-        sample
-    )
+        md5, NAME, fsize, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), sample)
+
     logf.write(entry + '\n')
     logf.close()
-    shutil.move('samples/%s' % NAME, 'samples/%s' % md5)
+    print entry
+    shutil.move(os.path.join(filedir, NAME), os.path.join(filedir, md5))
 
-
-def reqcheck():
-    '''
-    Check the logging file and samples directory exists
-    '''
-    filedir = "samples/"
-    filelog = "graborg-log.csv"
-
-    if not os.path.exists('%s' % filedir):
-        os.mkdir('%s' % filedir)
-    if not os.path.isfile('%s' % filelog):
-        shutil.copyfile('graborg-log.csv-template', 'graborg-log.csv')
 
 
 def main():
@@ -74,11 +87,11 @@ def main():
     # validate that the command line arguments are correct
     args = parse_args()
 
-    # sample becomes a arg namespace
+    # Set variables and call run program
     sample = args.url
     NAME = sample.split('/')[-1]
-    reqcheck()
-    grab(sample, NAME)
+    proxy = args.proxy
+    grab(sample, NAME, proxy)
     org(NAME, sample)
 
 
